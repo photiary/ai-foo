@@ -5,7 +5,7 @@ This file contains guidelines for Junie to follow when working on this Spring Bo
 ## Core Technologies & Versions
 
 - **Java:** Use the latest Java 24.
-- **Spring Boot:** Always use the latest stable release of Spring Boot 3.x (or the latest major
+- **Spring Boot:** Always use the latest stable release of Spring Boot 3.5.x (or the latest major
   stable version).
 - **Build Tool:** Use Gradle as the build tool. Ensure the `build.gradle` usees the latest stable
   Spring Boot package.
@@ -68,14 +68,12 @@ This file contains guidelines for Junie to follow when working on this Spring Bo
 ## Environment file
 
 - The default profile is 'local' if not specified: `application.properties`
-- Use 'test' profile for unit tests: `application-test.properties`
 - Use 'dev' profile for development: `application-dev.properties`
-- Use 'prod' profile for development: `application-prod.properties`
 
 ## Controller
 
 - **DO NOT use Entity:** Use the `./dto/*Request.java`, `./dto/*Response.java`.
-- **Swagger:** Generate Docs in All API.
+- **Swagger:** Generate Docs in All API. Should be able to output to **Swagger.json**.
 
 ## Data Access
 
@@ -89,16 +87,9 @@ This file contains guidelines for Junie to follow when working on this Spring Bo
 ## Database
 
 - **Table naming rules:** Use **Snake case** and prefix it with 'tb_'.
-- **Unit test & Local environment test:** Use H2 Database.
-- **Develop environment test:** Use PostgresSQL Database.
-
-## Unit Test
+- **Unit test environment test:** Use H2 Database.
+- **Develop, Local environment test:** Use PostgresSQL Database.
 
 ## Logs
 
 - **Log content:** timestamp, log level, transaction ID(Trace ID), user ID
-- The log output format should be JSON format in a 'prod' environment.
-
-## ETC
-
-- Should be able to output to **Swagger.json**
