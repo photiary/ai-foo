@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -15,6 +16,11 @@ public class FoodAnalysisResponse {
     private List<FoodItem> foods;
     private String suitability; // overall suitability considering user status
     private String suggestion;  // better meal suggestion
+
+    // Added: Token usage information
+    private UsageInfo usage;
+    // Added: Billing information
+    private BillingInfo billing;
 
     @Data
     @NoArgsConstructor
@@ -36,5 +42,28 @@ public class FoodAnalysisResponse {
     public static class Position {
         private int x;
         private int y;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class UsageInfo {
+        private Integer promptTokens;
+        private Integer completionTokens;
+        private Integer totalTokens;
+        private String modelName;
+        private Long requestDurationMs;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class BillingInfo {
+        private BigDecimal inputCost;   // USD
+        private BigDecimal outputCost;  // USD
+        private BigDecimal totalCost;   // USD
+        private String currency;        // e.g., USD
     }
 }

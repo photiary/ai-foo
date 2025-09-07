@@ -54,15 +54,23 @@ sequenceDiagram
     participant OpenAI as Open AI 서버
     participant FoodDB as AI Food DB
     
-    User ->> FoodServer: 이미지 분석 요청
-    FoodServer ->> FoodServer: 이미지 저장
-    FoodServer ->> OpenAI: 이미지 분석 요청
-    OpenAI -->> FoodServer: 이미지 분석 정보 + Token 사용량 응답
-    FoodServer ->> FoodDB: AnalysisFood 정보 저장
-    FoodServer ->> FoodDB: UsageToken 정보 저장
-    FoodServer ->> FoodServer: 과금 계산
+    User ->> FoodServer: 이미지 분석 요청 (status, 이미지 업로드)
+    FoodServer ->> FoodServer: 이미지 저장 (UUID 파일명, 용량/가로x세로 기록)
+    FoodServer ->> OpenAI: 이미지 + 상태 + 스키마 기반 분석 요청 (Structured Outputs)
+    OpenAI -->> FoodServer: 이미지 분석 정보 + Token 사용량/모델명/지연시간
+    FoodServer ->> FoodDB: AnalysisFood 정보 저장 (foods JSON, suitability, suggestion, 이미지 메타)
+    FoodServer ->> FoodDB: UsageToken 정보 저장 (prompt/completion/total, modelName, requestDuration)
+    FoodServer ->> FoodServer: 과금 계산 (OpenAI-Pricing.md 기준)
     FoodServer -->> User: OpenAI 분석 + Token 사용량 응답
 ```
+
+[설명]
+- 이미지 저장: 업로드된 원본 파일명과 별개로 서버는 충돌 방지를 위해 UUID 기반 물리 파일명을 생성하여 저장한다. 저장 경로는 `app.upload.dir`(기본값 `data/uploads`).
+- Structured Outputs: Spring AI의 `ResponseFormat.JSON_SCHEMA`를 사용하여 `schema/food-analysis-schema.json`에 맞춘 JSON만 응답받는다.
+- DB 저장:
+  - AnalysisFood: 사용자 상태(userStatus), OpenAI 응답의 foods(JSON 문자열), suitability, suggestion, 이미지 메타데이터(imageUserFileName, imageFileName, imageFileSize, imageSize) 저장.
+  - UsageToken: 모델명(modelName), 요청-응답 소요시간(requestDuration, ms) 및 토큰 수치(promptTokens, completionTokens, totalTokens). 토큰 수치는 공급자에 따라 미제공일 수 있다.
+- 과금: `prompts/OpenAI-Pricing.md`를 참조하여 모델별 단가와 UsageToken을 이용해 비용 계산.
 
 ### Entity
 
