@@ -38,6 +38,64 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FoodAnalysisService {
 
+    public FoodAnalysisResponse getDetail(Long id) {
+        AnalysisFood af = analysisFoodRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("AnalysisFood not found: " + id));
+        return mapToResponse(af);
+    }
+
+    public java.util.List<FoodAnalysisResponse> getList() {
+        return analysisFoodRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    private FoodAnalysisResponse mapToResponse(AnalysisFood af) {
+        try {
+            java.util.List<FoodAnalysisResponse.FoodItem> foods = null;
+            if (af.getFoods() != null) {
+                var type = objectMapper.getTypeFactory().constructCollectionType(java.util.List.class, FoodAnalysisResponse.FoodItem.class);
+                foods = objectMapper.readValue(af.getFoods(), type);
+            }
+            FoodAnalysisResponse resp = FoodAnalysisResponse.builder()
+                    .id(af.getId())
+                    .foods(foods)
+                    .suitability(af.getSuitability())
+                    .suggestion(af.getSuggestion())
+                    .build();
+
+            // usage & billing if available
+            if (af.getUsageToken() != null) {
+                var ut = af.getUsageToken();
+                FoodAnalysisResponse.UsageInfo usageInfo = FoodAnalysisResponse.UsageInfo.builder()
+                        .promptTokens(ut.getPromptTokens())
+                        .completionTokens(ut.getCompletionTokens())
+                        .totalTokens(ut.getTotalTokens())
+                        .modelName(ut.getModelName())
+                        .requestDurationMs(ut.getRequestDuration())
+                        .build();
+                resp.setUsage(usageInfo);
+                if (ut.getModelName() != null) {
+                    var cost = OpenAiPricing.estimate(
+                            ut.getModelName(),
+                            ut.getPromptTokens(),
+                            ut.getCompletionTokens(),
+                            ut.getTotalTokens()
+                    );
+                    resp.setBilling(FoodAnalysisResponse.BillingInfo.builder()
+                            .inputCost(cost.inputCost())
+                            .outputCost(cost.outputCost())
+                            .totalCost(cost.totalCost())
+                            .currency(cost.currency())
+                            .build());
+                }
+            }
+            return resp;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to map AnalysisFood to response", e);
+        }
+    }
+
     private static final Logger log = LoggerFactory.getLogger(FoodAnalysisService.class);
 
     private final ChatClient chatClient;

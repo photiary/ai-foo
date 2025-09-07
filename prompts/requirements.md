@@ -106,3 +106,23 @@ sequenceDiagram
     - totalTokens
     - modelName
     - requestDuration: Open AI 요청 응답 소요시간 단위 ms
+
+## 음식 분석 상세 조회
+
+- DB에 저장된 음식 이미지 분석 내용을 조회한다.
+
+- /v1/food/analysis/{id}
+- GET
+- PathString
+  - id: AnalysisFood의 id
+- 응답
+ - FoodAnalysisResponse
+
+## 음식 분석 목록 조회
+
+- DB에 저장된 음식 이미지 분석 내용을 모두 조회한다.
+
+- /v1/food/analysis
+- GET
+- 응답
+  - List<FoodAnalysisResponse>

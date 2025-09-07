@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,5 +37,22 @@ public class FoodAnalysisController {
     ) {
         FoodAnalysisResponse resp = foodAnalysisService.analyze(image, status);
         return ResponseEntity.ok(resp);
+    }
+    @Operation(
+            summary = "Get analysis detail",
+            description = "Get stored food analysis by id"
+    )
+    @GetMapping(path = "/analysis/{id}")
+    public ResponseEntity<FoodAnalysisResponse> getDetail(@PathVariable("id") Long id) {
+        return ResponseEntity.ok(foodAnalysisService.getDetail(id));
+    }
+
+    @Operation(
+            summary = "List all analyses",
+            description = "Get all stored food analyses"
+    )
+    @GetMapping(path = "/analysis")
+    public ResponseEntity<java.util.List<FoodAnalysisResponse>> getList() {
+        return ResponseEntity.ok(foodAnalysisService.getList());
     }
 }

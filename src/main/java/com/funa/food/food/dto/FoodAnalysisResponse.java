@@ -13,6 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class FoodAnalysisResponse {
+    private Long id; // AnalysisFood id (DB identifier)
     private List<FoodItem> foods;
     private String suitability; // overall suitability considering user status
     private String suggestion;  // better meal suggestion
