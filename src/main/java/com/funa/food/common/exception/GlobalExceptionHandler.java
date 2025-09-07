@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.time.Instant;
 import java.util.Map;
@@ -61,6 +62,18 @@ public class GlobalExceptionHandler {
                 "status", ex.getStatusCode().value(),
                 "error", ex.getStatusText(),
                 "message", ex.getResponseBodyAsString()
+        ));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleMaxUpload(MaxUploadSizeExceededException ex) {
+        long max = -1; // unknown; we will present a friendly message
+        log.warn("Payload too large: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", HttpStatus.PAYLOAD_TOO_LARGE.value(),
+                "error", "Payload Too Large",
+                "message", "Uploaded file exceeds the maximum allowed size."
         ));
     }
 
