@@ -46,3 +46,55 @@ Spring AI 에서 지원하는 Structured model outputs 기능을 사용한다. h
     - 사용자의 상태를 고려하여 적합한 식사 이미지를 분석하여 더 좋은 식사를 제안
 
 - Prompt 와 같은 `String` 은 `"""`를 이용하여 선언한다.
+
+```mermaid
+sequenceDiagram
+    participant User as 사용자
+    participant FoodServer as AI Food 서버
+    participant OpenAI as Open AI 서버
+    participant FoodDB as AI Food DB
+    
+    User ->> FoodServer: 이미지 분석 요청
+    FoodServer ->> FoodServer: 이미지 저장
+    FoodServer ->> OpenAI: 이미지 분석 요청
+    OpenAI -->> FoodServer: 이미지 분석 정보 + Token 사용량 응답
+    FoodServer ->> FoodDB: AnalysisFood 정보 저장
+    FoodServer ->> FoodDB: UsageToken 정보 저장
+    FoodServer ->> FoodServer: 과금 계산
+    FoodServer -->> User: OpenAI 분석 + Token 사용량 응답
+```
+
+### Entity
+
+- 음식 이미지 분석 요청을 이력 관리한다.
+
+- Domain: Food
+- Entity: AnalysisFood
+  - id
+  - userStatus: 사용자의 상태
+  - foods: Open AI 응답의 foods, JSON 구조의 String 그대로 저장
+  - suitability: Open AI 응답의 suitability
+  - suggestion: Open AI 응답의 suggestion
+  - imageUserFileName: 사용자가 업로드한 이미지의 이름
+  - imageFileName: 중복 방지 서버에서 관리하는 물리적 이미지 이름, UUID로 생
+  - imageFileSize: 단위 bytes
+  - imageSize: 가로 세로 사이즈, 단위 픽셀
+  - UsageToken
+
+## Open AI Token 사용 이력
+
+- Token 사용량 과금 계산
+- 사용한 모델에 따라 과금 계산은 `OpenAI-Pricing.md`를 참조
+
+### Entity
+
+- Open AI에서 사용 토큰양을 이력 관리한다.
+
+- Domain: Usage
+- Entity: UsageToken
+    - id
+    - promptTokens
+    - completionTokens
+    - totalTokens
+    - modelName
+    - requestDuration: Open AI 요청 응답 소요시간 단위 ms
