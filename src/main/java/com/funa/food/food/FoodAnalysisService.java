@@ -10,6 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.ResponseFormat;
 import org.springframework.beans.factory.annotation.Value;
@@ -75,12 +78,14 @@ public class FoodAnalysisService {
             long durationMs = callResult.durationMs();
             FoodAnalysisResponse parsed = parseResponse(callResult.content());
 
+            ChatResponseMetadata metadata = callResult.metadata;
             String modelName = resolveModelName();
-            UsageToken usage = persistUsage(durationMs, modelName);
+            Usage usage = metadata.getUsage();
+            UsageToken usageToken = persistUsage(durationMs, modelName, usage.getPromptTokens(), usage.getCompletionTokens(), usage.getTotalTokens());
 
-            persistAnalysisFood(parsed, status, imageMeta, usage);
+            persistAnalysisFood(parsed, status, imageMeta, usageToken);
 
-            enrichResponseWithUsageAndBilling(parsed, usage, modelName);
+            enrichResponseWithUsageAndBilling(parsed, usageToken, modelName);
 
             return parsed;
         } catch (IOException e) {
@@ -133,11 +138,11 @@ public class FoodAnalysisService {
                 .build();
     }
 
-    private record ModelCallResult(String content, long durationMs) {}
+    private record ModelCallResult(String content, long durationMs, ChatResponseMetadata metadata) {}
 
     private ModelCallResult callModel(MultipartFile image, String persona, String userText, OpenAiChatOptions options) {
         Instant start = Instant.now();
-        String content = chatClient
+        ChatClient.CallResponseSpec response = chatClient
                 .prompt()
                 .system(persona)
                 .user(u -> {
@@ -151,10 +156,11 @@ public class FoodAnalysisService {
                     }
                 })
                 .options(options)
-                .call()
-                .content();
+                .call();
+        ChatResponse chatResponse = response.chatResponse();
         long durationMs = Duration.between(start, Instant.now()).toMillis();
-        return new ModelCallResult(content, durationMs);
+        String content = chatResponse.getResult().getOutput().getText();
+        return new ModelCallResult(content, durationMs, chatResponse.getMetadata());
     }
 
     private FoodAnalysisResponse parseResponse(String content) throws IOException {
@@ -162,15 +168,19 @@ public class FoodAnalysisService {
     }
 
     private String resolveModelName() {
-        return System.getProperty("OPENAI_MODEL", System.getenv().getOrDefault("OPENAI_MODEL", "unknown"));
+        String modelName = System.getProperty("OPENAI_MODEL", System.getenv().getOrDefault("OPENAI_MODEL", "gpt-4.1-nano"));
+        if (modelName.equals("local-model")) {
+            return "gpt-4.1-nano";
+        }
+        return modelName;
     }
 
-    private UsageToken persistUsage(long durationMs, String modelName) {
+    private UsageToken persistUsage(long durationMs, String modelName, Integer promptTokens, Integer completionTokens, Integer totalTokens) {
         UsageToken usage = UsageToken.builder()
                 .modelName(modelName)
-                .promptTokens(null)
-                .completionTokens(null)
-                .totalTokens(null)
+                .promptTokens(promptTokens)
+                .completionTokens(completionTokens)
+                .totalTokens(totalTokens)
                 .requestDuration(durationMs)
                 .build();
         return usageTokenRepository.save(usage);

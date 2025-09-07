@@ -13,11 +13,12 @@ public final class OpenAiPricing {
     private OpenAiPricing() {}
 
     /**
-     * Rates per 1K tokens in USD. Separate for input and output when applicable.
+     * Rates per 1M tokens in USD. Separate for input and output when applicable.
      */
     private static final Map<String, Rate> RATES = Map.of(
             // Example rates (not authoritative). Adjust to your pricing file as needed.
-            "gpt-4.1-nano", new Rate(new BigDecimal("0.0004"), new BigDecimal("0.0012")),
+            // Per prompts/OpenAI-Pricing.md, prices are per 1M tokens
+            "gpt-4.1-nano", new Rate(new BigDecimal("0.10"), new BigDecimal("0.40")),
             // Local model or unknown -> free
             "local-model", new Rate(BigDecimal.ZERO, BigDecimal.ZERO),
             "unknown", new Rate(BigDecimal.ZERO, BigDecimal.ZERO)
@@ -27,28 +28,28 @@ public final class OpenAiPricing {
         String key = modelName == null ? "unknown" : modelName;
         Rate rate = RATES.getOrDefault(key, RATES.get("unknown"));
 
-        BigDecimal thousand = new BigDecimal("1000");
+        BigDecimal million = new BigDecimal("1000000");
         BigDecimal input = BigDecimal.ZERO;
         BigDecimal output = BigDecimal.ZERO;
 
         if (promptTokens != null) {
-            input = rate.inputRatePer1k.multiply(new BigDecimal(promptTokens)).divide(thousand, 6, RoundingMode.HALF_UP);
+            input = rate.inputRatePer1m.multiply(new BigDecimal(promptTokens)).divide(million, 6, RoundingMode.HALF_UP);
         }
         if (completionTokens != null) {
-            output = rate.outputRatePer1k.multiply(new BigDecimal(completionTokens)).divide(thousand, 6, RoundingMode.HALF_UP);
+            output = rate.outputRatePer1m.multiply(new BigDecimal(completionTokens)).divide(million, 6, RoundingMode.HALF_UP);
         }
         // If only total tokens provided, split half/half heuristically (best-effort)
         if (promptTokens == null && completionTokens == null && totalTokens != null) {
             BigDecimal half = new BigDecimal(totalTokens).divide(new BigDecimal("2"), 6, RoundingMode.HALF_UP);
-            input = rate.inputRatePer1k.multiply(half).divide(thousand, 6, RoundingMode.HALF_UP);
-            output = rate.outputRatePer1k.multiply(half).divide(thousand, 6, RoundingMode.HALF_UP);
+            input = rate.inputRatePer1m.multiply(half).divide(million, 6, RoundingMode.HALF_UP);
+            output = rate.outputRatePer1m.multiply(half).divide(million, 6, RoundingMode.HALF_UP);
         }
 
         BigDecimal total = input.add(output).setScale(6, RoundingMode.HALF_UP);
         return new Cost(input.setScale(6, RoundingMode.HALF_UP), output.setScale(6, RoundingMode.HALF_UP), total, "USD");
     }
 
-    private record Rate(BigDecimal inputRatePer1k, BigDecimal outputRatePer1k) {}
+    private record Rate(BigDecimal inputRatePer1m, BigDecimal outputRatePer1m) {}
 
     public record Cost(BigDecimal inputCost, BigDecimal outputCost, BigDecimal totalCost, String currency) {}
 }
