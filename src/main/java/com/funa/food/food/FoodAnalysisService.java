@@ -45,7 +45,7 @@ public class FoodAnalysisService {
     }
 
     public java.util.List<FoodAnalysisResponse> getList() {
-        return analysisFoodRepository.findAll().stream()
+        return analysisFoodRepository.findAll(org.springframework.data.domain.Sort.by("createdAt").descending()).stream()
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -104,6 +104,10 @@ public class FoodAnalysisService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AnalysisFoodRepository analysisFoodRepository;
     private final UsageTokenRepository usageTokenRepository;
+
+    // Inject the configured model from Spring properties if present
+    @Value("${spring.ai.openai.chat.options.model:}")
+    private String modelProperty;
 
     @Value("${app.upload.dir:data/uploads}")
     private String uploadDir;
@@ -229,11 +233,23 @@ public class FoodAnalysisService {
     }
 
     private String resolveModelName() {
-        String modelName = System.getProperty("OPENAI_MODEL", System.getenv().getOrDefault("OPENAI_MODEL", "gpt-4.1-nano"));
-        if (modelName.equals("local-model")) {
-            return "gpt-4.1-nano";
+        try {
+            String configured = modelProperty;
+            if (configured != null && !configured.isBlank()) {
+                log.info("Resolved model name (spring property): {}", configured);
+                return normalizeModel(configured);
+            }
+        } catch (Exception ignore) {
+            // Fall back below
         }
-        return modelName;
+        String fromEnv = System.getProperty("OPENAI_MODEL", System.getenv().getOrDefault("OPENAI_MODEL", "gpt-5"));
+        String resolved = normalizeModel(fromEnv);
+        log.info("Resolved model name (env/system): {}", resolved);
+        return resolved;
+    }
+
+    private String normalizeModel(String name) {
+        return name.trim();
     }
 
     private UsageToken persistUsage(long durationMs, String modelName, Integer promptTokens, Integer completionTokens, Integer totalTokens) {
