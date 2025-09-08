@@ -3,10 +3,13 @@ package com.funa.food.food;
 import com.funa.food.food.dto.FoodAnalysisResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,6 +20,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 @RestController
 @RequestMapping(path = "/v1/food", produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
@@ -24,6 +30,9 @@ import org.springframework.web.multipart.MultipartFile;
 public class FoodAnalysisController {
 
     private final FoodAnalysisService foodAnalysisService;
+
+    @Value("${app.upload.dir:data/uploads}")
+    private String uploadDir;
 
     @Operation(
             summary = "Analyze a meal image",
@@ -54,5 +63,30 @@ public class FoodAnalysisController {
     @GetMapping(path = "/analysis")
     public ResponseEntity<java.util.List<FoodAnalysisResponse>> getList() {
         return ResponseEntity.ok(foodAnalysisService.getList());
+    }
+
+    @Operation(
+            summary = "Get uploaded food image",
+            description = "Serve image stored in 'data/uploads' by fileName query parameter"
+    )
+    @GetMapping(path = "/analysis/image", produces = MediaType.ALL_VALUE)
+    public ResponseEntity<Resource> getImage(@RequestParam("fileName") String fileName) throws Exception {
+        if (fileName == null || fileName.isBlank() || fileName.contains("..") || fileName.contains("/") || fileName.contains("\\")) {
+            return ResponseEntity.badRequest().build();
+        }
+        Path base = Path.of(uploadDir).toAbsolutePath().normalize();
+        Path target = base.resolve(fileName).normalize();
+        if (!target.startsWith(base) || !Files.exists(target) || !Files.isRegularFile(target)) {
+            return ResponseEntity.notFound().build();
+        }
+        String contentType = Files.probeContentType(target);
+        if (contentType == null) {
+            contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        }
+        Resource resource = new FileSystemResource(target);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
+                .body(resource);
     }
 }

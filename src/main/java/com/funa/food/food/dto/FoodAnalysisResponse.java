@@ -25,6 +25,8 @@ public class FoodAnalysisResponse {
 
     private String imageSize;
 
+    private String imageFileName;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

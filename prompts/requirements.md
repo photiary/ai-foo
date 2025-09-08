@@ -126,3 +126,9 @@ sequenceDiagram
 - GET
 - 응답
   - List<FoodAnalysisResponse>
+
+## 음식 이미지 조회
+
+- 'data/uploads'에 있는 이미지를 응답한다.
+
+- /v1/food/analysis/image?fileName={fileName}

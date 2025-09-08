@@ -60,9 +60,10 @@ public class FoodAnalysisService {
             FoodAnalysisResponse resp = FoodAnalysisResponse.builder()
                     .id(af.getId())
                     .foods(foods)
-                    .imageSize(af.getImageSize())
                     .suitability(af.getSuitability())
                     .suggestion(af.getSuggestion())
+                    .imageSize(af.getImageSize())
+                    .imageFileName(af.getImageFileName())
                     .build();
 
             // usage & billing if available
