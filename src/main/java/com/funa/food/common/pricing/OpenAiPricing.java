@@ -18,7 +18,10 @@ public final class OpenAiPricing {
     private static final Map<String, Rate> RATES = Map.of(
             // Example rates (not authoritative). Adjust to your pricing file as needed.
             // Per prompts/OpenAI-Pricing.md, prices are per 1M tokens
+            "gpt-5", new Rate(new BigDecimal("1.25"), new BigDecimal("10.00")),
             "gpt-4.1-nano", new Rate(new BigDecimal("0.10"), new BigDecimal("0.40")),
+            "gpt-4o", new Rate(new BigDecimal("2.50"), new BigDecimal("10.00")),
+            "gpt-image-1", new Rate(new BigDecimal("10.00"), new BigDecimal("40.00")),
             // Local model or unknown -> free
             "local-model", new Rate(BigDecimal.ZERO, BigDecimal.ZERO),
             "unknown", new Rate(BigDecimal.ZERO, BigDecimal.ZERO)
