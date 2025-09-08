@@ -23,6 +23,8 @@ public class FoodAnalysisResponse {
     // Added: Billing information
     private BillingInfo billing;
 
+    private String imageSize;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

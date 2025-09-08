@@ -60,6 +60,7 @@ public class FoodAnalysisService {
             FoodAnalysisResponse resp = FoodAnalysisResponse.builder()
                     .id(af.getId())
                     .foods(foods)
+                    .imageSize(af.getImageSize())
                     .suitability(af.getSuitability())
                     .suggestion(af.getSuggestion())
                     .build();
@@ -193,6 +194,7 @@ public class FoodAnalysisService {
                 .build();
         return OpenAiChatOptions.builder()
                 .responseFormat(responseFormat)
+//                .temperature(1.0)
                 .build();
     }
 
