@@ -27,7 +27,7 @@ TO-BE: 이미지만 분석할 경우 토큰 사용량을 분석하기 위해 옵
      - 기존 페르소사, 프롬프트, food-analysis-schema.json 유지한다. 
 
 - RequestBody 추가항목:
-  - analysisMode: String IMG_ONLY(식사 이미지 분석만) | IMG_SUGG(식사 이미지 분석과 사용자 상태에 따라 제안)
+  - analysisMode: String 'IMG_ONLY'(식사 이미지 분석만) | 'IMG_SUGG'(식사 이미지 분석과 사용자 상태에 따라 제안)
 
 ### Entity
 

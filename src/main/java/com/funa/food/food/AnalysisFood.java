@@ -46,7 +46,7 @@ public class AnalysisFood extends BaseAuditEntity {
     @JoinColumn(name = "usage_token_id", unique = true)
     private UsageToken usageToken;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = AnalysisModeConverter.class)
     @Column(name = "analysis_mode", length = 40)
     private AnalysisMode analysisMode;
 }

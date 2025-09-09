@@ -19,6 +19,8 @@ public class FoodAnalysisResponse {
     private String suitability; // overall suitability considering user status
     private String suggestion;  // better meal suggestion
 
+    private String analysisMode; // IMG_ONLY | IMG_SUGG
+
     // Added: Token usage information
     private UsageInfo usage;
     // Added: Billing information

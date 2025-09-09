@@ -63,6 +63,7 @@ public class FoodAnalysisService {
                     .userStatus(af.getUserStatus())
                     .suitability(af.getSuitability())
                     .suggestion(af.getSuggestion())
+                    .analysisMode(af.getAnalysisMode() == null ? null : new AnalysisModeConverter().convertToDatabaseColumn(af.getAnalysisMode()))
                     .imageSize(af.getImageSize())
                     .imageFileName(af.getImageFileName())
                     .build();
@@ -164,6 +165,9 @@ public class FoodAnalysisService {
             UsageToken usageToken = persistUsage(durationMs, modelName, usage.getPromptTokens(), usage.getCompletionTokens(), usage.getTotalTokens());
 
             persistAnalysisFood(parsed, status, imageMeta, usageToken, mode);
+
+            // include analysisMode in response as code value
+            parsed.setAnalysisMode(new AnalysisModeConverter().convertToDatabaseColumn(mode));
 
             enrichResponseWithUsageAndBilling(parsed, usageToken, modelName);
 
