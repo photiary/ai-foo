@@ -143,7 +143,7 @@ public class FoodAnalysisService {
             FoodAnalysisResponse parsed = parseResponse(callResult.content());
 
             ChatResponseMetadata metadata = callResult.metadata;
-            String modelName = resolveModelName();
+            String modelName = metadata.getModel();
             Usage usage = metadata.getUsage();
             UsageToken usageToken = persistUsage(durationMs, modelName, usage.getPromptTokens(), usage.getCompletionTokens(), usage.getTotalTokens());
 
@@ -199,7 +199,6 @@ public class FoodAnalysisService {
                 .build();
         return OpenAiChatOptions.builder()
                 .responseFormat(responseFormat)
-//                .temperature(1.0)
                 .build();
     }
 

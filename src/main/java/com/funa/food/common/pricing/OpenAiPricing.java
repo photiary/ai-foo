@@ -19,17 +19,17 @@ public final class OpenAiPricing {
             // Example rates (not authoritative). Adjust to your pricing file as needed.
             // Per prompts/OpenAI-Pricing.md, prices are per 1M tokens
             "gpt-5", new Rate(new BigDecimal("1.25"), new BigDecimal("10.00")),
+            "gpt-5-2025-08-07", new Rate(new BigDecimal("1.25"), new BigDecimal("10.00")),
             "gpt-4.1-nano", new Rate(new BigDecimal("0.10"), new BigDecimal("0.40")),
             "gpt-4o", new Rate(new BigDecimal("2.50"), new BigDecimal("10.00")),
             "gpt-image-1", new Rate(new BigDecimal("10.00"), new BigDecimal("40.00")),
-            // Local model or unknown -> free
-            "local-model", new Rate(BigDecimal.ZERO, BigDecimal.ZERO),
-            "unknown", new Rate(BigDecimal.ZERO, BigDecimal.ZERO)
+            // Local model -> free
+            "local-model", new Rate(BigDecimal.ZERO, BigDecimal.ZERO)
     );
 
     public static Cost estimate(String modelName, Integer promptTokens, Integer completionTokens, Integer totalTokens) {
-        String key = modelName == null ? "unknown" : modelName;
-        Rate rate = RATES.getOrDefault(key, RATES.get("unknown"));
+        String key = modelName == null ? "local-model" : modelName;
+        Rate rate = RATES.getOrDefault(key, RATES.get("local-model"));
 
         BigDecimal million = new BigDecimal("1000000");
         BigDecimal input = BigDecimal.ZERO;
