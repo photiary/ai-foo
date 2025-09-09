@@ -10,10 +10,6 @@
         "type": "object",
         "properties": {
           "name": { "type": "string" },
-          "protein": { "type": "number" },
-          "carbs": { "type": "number" },
-          "fat": { "type": "number" },
-          "calories": { "type": "number" },
           "position": {
             "type": "object",
             "properties": {
@@ -27,10 +23,14 @@
         "required": ["name", "position"],
         "additionalProperties": false
       }
-    },
-    "suitability": { "type": "string", "nullable": true },
-    "suggestion": { "type": "string", "nullable": true }
+    }
   },
   "required": ["foods"],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "not": {
+    "anyOf": [
+      { "required": ["suitability"] },
+      { "required": ["suggestion"] }
+    ]
+  }
 }
