@@ -28,8 +28,8 @@
         "additionalProperties": false
       }
     },
-    "suitability": { "type": ["string", "null"] },
-    "suggestion": { "type": ["string", "null"] }
+    "suitability": { "type": "string", "nullable": true },
+    "suggestion": { "type": "string", "nullable": true }
   },
   "required": ["foods"],
   "additionalProperties": false
