@@ -60,6 +60,7 @@ public class FoodAnalysisService {
             FoodAnalysisResponse resp = FoodAnalysisResponse.builder()
                     .id(af.getId())
                     .foods(foods)
+                    .userStatus(af.getUserStatus())
                     .suitability(af.getSuitability())
                     .suggestion(af.getSuggestion())
                     .imageSize(af.getImageSize())

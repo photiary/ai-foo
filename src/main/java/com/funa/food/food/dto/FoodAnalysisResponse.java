@@ -15,6 +15,7 @@ import java.util.List;
 public class FoodAnalysisResponse {
     private Long id; // AnalysisFood id (DB identifier)
     private List<FoodItem> foods;
+    private String userStatus;
     private String suitability; // overall suitability considering user status
     private String suggestion;  // better meal suggestion
 
