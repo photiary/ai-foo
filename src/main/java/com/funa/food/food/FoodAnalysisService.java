@@ -159,6 +159,8 @@ public class FoodAnalysisService {
             long durationMs = callResult.durationMs();
             FoodAnalysisResponse parsed = parseResponse(callResult.content());
 
+            parsed.setUserStatus(status);
+
             ChatResponseMetadata metadata = callResult.metadata;
             String modelName = metadata.getModel();
             Usage usage = metadata.getUsage();
