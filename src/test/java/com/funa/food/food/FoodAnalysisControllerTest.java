@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
-class FoodAnalysisControllerTest {
+class FoodAnalysisControllerTest { 
 
     MockMvc mockMvc;
     FoodAnalysisService foodAnalysisService;
@@ -45,12 +45,13 @@ class FoodAnalysisControllerTest {
                 .suggestion("현미밥과 채소를 추가하세요")
                 .build();
 
-        Mockito.when(foodAnalysisService.analyze(Mockito.any(), Mockito.anyString()))
+        Mockito.when(foodAnalysisService.analyze(Mockito.any(), Mockito.anyString(), Mockito.eq(AnalysisMode.IMAGE_WITH_SUGGESTION)))
                 .thenReturn(resp);
 
         mockMvc.perform(multipart("/v1/food/analysis")
                         .file(image)
                         .param("status", status)
+                        .param("analysisMode", "식사 이미지 분석과 사용자 상태에 따라 제안")
                         .contentType(MediaType.MULTIPART_FORM_DATA)
                         .characterEncoding(StandardCharsets.UTF_8))
                 .andExpect(status().isOk())

@@ -18,7 +18,7 @@ public class AnalysisFood extends BaseAuditEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 1000)
+    @Column(length = 1000)
     private String userStatus;
 
     @Lob
@@ -45,4 +45,8 @@ public class AnalysisFood extends BaseAuditEntity {
     @OneToOne
     @JoinColumn(name = "usage_token_id", unique = true)
     private UsageToken usageToken;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "analysis_mode", length = 40)
+    private AnalysisMode analysisMode;
 }

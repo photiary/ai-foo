@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schema/food-analysis-image-only-schema.json",
+  "title": "FoodAnalysisResponseImageOnly",
+  "type": "object",
+  "properties": {
+    "foods": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "protein": { "type": "number" },
+          "carbs": { "type": "number" },
+          "fat": { "type": "number" },
+          "calories": { "type": "number" },
+          "position": {
+            "type": "object",
+            "properties": {
+              "x": { "type": "integer" },
+              "y": { "type": "integer" }
+            },
+            "required": ["x", "y"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["name", "position"],
+        "additionalProperties": false
+      }
+    },
+    "suitability": { "type": ["string", "null"] },
+    "suggestion": { "type": ["string", "null"] }
+  },
+  "required": ["foods"],
+  "additionalProperties": false
+}

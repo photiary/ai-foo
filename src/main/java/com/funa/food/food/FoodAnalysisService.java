@@ -114,30 +114,45 @@ public class FoodAnalysisService {
     private String uploadDir;
 
     @Transactional
-    public FoodAnalysisResponse analyze(MultipartFile image, String status) {
-        validateInputs(image, status);
+    public FoodAnalysisResponse analyze(MultipartFile image, String status, AnalysisMode mode) {
+        validateInputs(image, status, mode);
 
-        String persona = """
-                너는 사용자의 생활과 식습관을 살펴보고, 작은 변화로도 건강한 하루를 이어갈 수 있도록 함께 응원하고 도와주는 AI 생활 코치이다.
-                응답은 반드시 JSON만 출력한다.
-                """;
-
-        String userTextTemplate = """
-                사용자 상태: %s
-                식사 이미지 데이터 URI를 참고하여, 다음 정보를 JSON으로만 응답하라.
-                - 음식 리스트
-                - 음식별 탄수화물(carbs), 단백질(protein), 지방(fat) 단위: g
-                - 음식별 칼로리(calories) 단위: kcal
-                - 이미지에서의 위치 중심 좌표(position: {x, y})
-                또한 사용자의 상태를 고려하여 식사의 적합성(suitability)을 평가하고 더 좋은 식사 제안(suggestion)을 제공하라.
-                """;
+        String persona;
+        String userText;
+        if (mode == AnalysisMode.IMAGE_ONLY) {
+            persona = """
+                    너는 식사 이미지를 정확히 분석하는 컴퓨터 비전 전문가 AI이다.
+                    응답은 반드시 JSON만 출력한다.
+                    """;
+            userText = """
+                    식사 이미지 데이터 URI를 참고하여, 다음 정보를 JSON으로만 응답하라.
+                    - 음식 리스트
+                    - 이미지에서의 위치 중심 좌표(position: {x, y})
+                    """;
+        } else {
+            persona = """
+                    너는 사용자의 생활과 식습관을 살펴보고, 작은 변화로도 건강한 하루를 이어갈 수 있도록 함께 응원하고 도와주는 AI 생활 코치이다.
+                    응답은 반드시 JSON만 출력한다.
+                    """;
+            String userTextTemplate = """
+                    사용자 상태: %s
+                    식사 이미지 데이터 URI를 참고하여, 다음 정보를 JSON으로만 응답하라.
+                    - 음식 리스트
+                    - 음식별 탄수화물(carbs), 단백질(protein), 지방(fat) 단위: g
+                    - 음식별 칼로리(calories) 단위: kcal
+                    - 이미지에서의 위치 중심 좌표(position: {x, y})
+                    또한 사용자의 상태를 고려하여 식사의 적합성(suitability)을 평가하고 더 좋은 식사 제안(suggestion)을 제공하라.
+                    """;
+            userText = String.format(userTextTemplate, status);
+        }
 
         try {
-            String userText = String.format(userTextTemplate, status);
-
             ImageMeta imageMeta = persistImageAndExtractMeta(image);
 
-            OpenAiChatOptions options = buildChatOptionsWithSchema();
+            String schemaPath = (mode == AnalysisMode.IMAGE_ONLY)
+                    ? "schema/food-analysis-image-only-schema.json"
+                    : "schema/food-analysis-schema.json";
+            OpenAiChatOptions options = buildChatOptionsWithSchemaPath(schemaPath);
 
             ModelCallResult callResult = callModel(image, persona, userText, options);
             long durationMs = callResult.durationMs();
@@ -148,7 +163,7 @@ public class FoodAnalysisService {
             Usage usage = metadata.getUsage();
             UsageToken usageToken = persistUsage(durationMs, modelName, usage.getPromptTokens(), usage.getCompletionTokens(), usage.getTotalTokens());
 
-            persistAnalysisFood(parsed, status, imageMeta, usageToken);
+            persistAnalysisFood(parsed, status, imageMeta, usageToken, mode);
 
             enrichResponseWithUsageAndBilling(parsed, usageToken, modelName);
 
@@ -158,12 +173,14 @@ public class FoodAnalysisService {
         }
     }
 
-    private void validateInputs(MultipartFile image, String status) {
+    private void validateInputs(MultipartFile image, String status, AnalysisMode mode) {
         if (image == null || image.isEmpty()) {
             throw new IllegalArgumentException("image must not be empty");
         }
-        if (status == null || status.isBlank()) {
-            throw new IllegalArgumentException("status must not be blank");
+        if (mode != AnalysisMode.IMAGE_ONLY) {
+            if (status == null || status.isBlank()) {
+                throw new IllegalArgumentException("status must not be blank");
+            }
         }
     }
 
@@ -188,8 +205,8 @@ public class FoodAnalysisService {
         return new ImageMeta(originalName, uuidName, imagePath, image.getSize(), imageSize, image.getContentType());
     }
 
-    private OpenAiChatOptions buildChatOptionsWithSchema() throws IOException {
-        String schemaJson = loadClasspath("schema/food-analysis-schema.json");
+    private OpenAiChatOptions buildChatOptionsWithSchemaPath(String classpath) throws IOException {
+        String schemaJson = loadClasspath(classpath);
         ResponseFormat.JsonSchema jsonSchema = ResponseFormat.JsonSchema.builder()
                 .name("FoodAnalysisResponse")
                 .schema(schemaJson)
@@ -263,7 +280,7 @@ public class FoodAnalysisService {
         return usageTokenRepository.save(usage);
     }
 
-    private void persistAnalysisFood(FoodAnalysisResponse parsed, String status, ImageMeta imageMeta, UsageToken usage) {
+    private void persistAnalysisFood(FoodAnalysisResponse parsed, String status, ImageMeta imageMeta, UsageToken usage, AnalysisMode mode) {
         AnalysisFood af = AnalysisFood.builder()
                 .userStatus(status)
                 .foods(toJsonSilently(parsed.getFoods()))
@@ -274,6 +291,7 @@ public class FoodAnalysisService {
                 .imageFileSize(imageMeta.size())
                 .imageSize(imageMeta.dimensions())
                 .usageToken(usage)
+                .analysisMode(mode)
                 .build();
         analysisFoodRepository.save(af);
     }

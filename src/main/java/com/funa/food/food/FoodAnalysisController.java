@@ -42,9 +42,11 @@ public class FoodAnalysisController {
     @PostMapping(path = "/analysis", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<FoodAnalysisResponse> analyze(
             @RequestParam("image") MultipartFile image,
-            @RequestParam("status") String status
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "analysisMode", required = false) String analysisMode
     ) {
-        FoodAnalysisResponse resp = foodAnalysisService.analyze(image, status);
+        AnalysisMode mode = AnalysisMode.from(analysisMode);
+        FoodAnalysisResponse resp = foodAnalysisService.analyze(image, status, mode);
         return ResponseEntity.ok(resp);
     }
     @Operation(
