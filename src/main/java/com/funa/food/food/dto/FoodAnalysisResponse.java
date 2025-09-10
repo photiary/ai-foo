@@ -62,6 +62,7 @@ public class FoodAnalysisResponse {
         private Integer promptTokens;
         private Integer completionTokens;
         private Integer totalTokens;
+        private Integer cachedTokens;
         private String modelName;
         private Long requestDurationMs;
     }
@@ -72,6 +73,7 @@ public class FoodAnalysisResponse {
     @Builder
     public static class BillingInfo {
         private BigDecimal inputCost;   // USD
+        private BigDecimal cachedInputCost; // USD (cached input)
         private BigDecimal outputCost;  // USD
         private BigDecimal totalCost;   // USD
         private String currency;        // e.g., USD

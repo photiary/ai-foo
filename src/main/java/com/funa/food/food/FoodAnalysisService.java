@@ -76,6 +76,7 @@ public class FoodAnalysisService {
                         .promptTokens(ut.getPromptTokens())
                         .completionTokens(ut.getCompletionTokens())
                         .totalTokens(ut.getTotalTokens())
+                        .cachedTokens(ut.getCachedTokens())
                         .modelName(ut.getModelName())
                         .requestDurationMs(ut.getRequestDuration())
                         .build();
@@ -84,11 +85,13 @@ public class FoodAnalysisService {
                     var cost = OpenAiPricing.estimate(
                             ut.getModelName(),
                             ut.getPromptTokens(),
+                            ut.getCachedTokens(),
                             ut.getCompletionTokens(),
                             ut.getTotalTokens()
                     );
                     resp.setBilling(FoodAnalysisResponse.BillingInfo.builder()
                             .inputCost(cost.inputCost())
+                            .cachedInputCost(cost.cachedInputCost())
                             .outputCost(cost.outputCost())
                             .totalCost(cost.totalCost())
                             .currency(cost.currency())
@@ -165,7 +168,19 @@ public class FoodAnalysisService {
             ChatResponseMetadata metadata = callResult.metadata;
             String modelName = metadata.getModel();
             Usage usage = metadata.getUsage();
-            UsageToken usageToken = persistUsage(durationMs, modelName, usage.getPromptTokens(), usage.getCompletionTokens(), usage.getTotalTokens());
+            Integer cachedTokens = null;
+            try {
+                Object nativeUsage = usage.getNativeUsage();
+                if (nativeUsage instanceof org.springframework.ai.openai.api.OpenAiApi.Usage openAiUsage) {
+                    var details = openAiUsage.promptTokensDetails();
+                    if (details != null) {
+                        cachedTokens = details.cachedTokens();
+                    }
+                }
+            } catch (Exception ignore) {
+                // leave cachedTokens as null if not available
+            }
+            UsageToken usageToken = persistUsage(durationMs, modelName, usage.getPromptTokens(), usage.getCompletionTokens(), usage.getTotalTokens(), cachedTokens);
 
             AnalysisFood saved = persistAnalysisFood(parsed, status, imageMeta, usageToken, mode);
 
@@ -282,12 +297,13 @@ public class FoodAnalysisService {
         return name.trim();
     }
 
-    private UsageToken persistUsage(long durationMs, String modelName, Integer promptTokens, Integer completionTokens, Integer totalTokens) {
+    private UsageToken persistUsage(long durationMs, String modelName, Integer promptTokens, Integer completionTokens, Integer totalTokens, Integer cachedTokens) {
         UsageToken usage = UsageToken.builder()
                 .modelName(modelName)
                 .promptTokens(promptTokens)
                 .completionTokens(completionTokens)
                 .totalTokens(totalTokens)
+                .cachedTokens(cachedTokens)
                 .requestDuration(durationMs)
                 .build();
         return usageTokenRepository.save(usage);
@@ -315,17 +331,20 @@ public class FoodAnalysisService {
                 .promptTokens(usage.getPromptTokens())
                 .completionTokens(usage.getCompletionTokens())
                 .totalTokens(usage.getTotalTokens())
+                .cachedTokens(usage.getCachedTokens())
                 .modelName(usage.getModelName())
                 .requestDurationMs(usage.getRequestDuration())
                 .build();
         OpenAiPricing.Cost cost = OpenAiPricing.estimate(
                 modelName,
                 usage.getPromptTokens(),
+                usage.getCachedTokens(),
                 usage.getCompletionTokens(),
                 usage.getTotalTokens()
         );
         FoodAnalysisResponse.BillingInfo billing = FoodAnalysisResponse.BillingInfo.builder()
                 .inputCost(cost.inputCost())
+                .cachedInputCost(cost.cachedInputCost())
                 .outputCost(cost.outputCost())
                 .totalCost(cost.totalCost())
                 .currency(cost.currency())

@@ -21,6 +21,8 @@ public class UsageToken extends BaseAuditEntity {
     private Integer completionTokens;
     private Integer totalTokens;
 
+    private Integer cachedTokens; // OpenAI cached input tokens
+
     @Column(length = 100)
     private String modelName;
 
