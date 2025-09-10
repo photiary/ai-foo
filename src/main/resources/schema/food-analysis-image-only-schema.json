@@ -26,11 +26,5 @@
     }
   },
   "required": ["foods"],
-  "additionalProperties": false,
-  "not": {
-    "anyOf": [
-      { "required": ["suitability"] },
-      { "required": ["suggestion"] }
-    ]
-  }
+  "additionalProperties": false
 }

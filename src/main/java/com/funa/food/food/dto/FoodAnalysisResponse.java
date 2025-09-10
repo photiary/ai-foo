@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Data
@@ -20,6 +21,7 @@ public class FoodAnalysisResponse {
     private String suggestion;  // better meal suggestion
 
     private String analysisMode; // IMG_ONLY | IMG_SUGG
+    private OffsetDateTime createdAt; // 데이터 생성일
 
     // Added: Token usage information
     private UsageInfo usage;
