@@ -51,16 +51,13 @@ public final class OpenAiPricing {
         m.put("computer-use-preview", new Rate(new BigDecimal("3.00"), new BigDecimal("12.00"), BigDecimal.ZERO));
         // Image models
         m.put("gpt-image-1", new Rate(new BigDecimal("10.00"), new BigDecimal("40.00"), new BigDecimal("2.50")));
-        // Aliases
-        m.put("gpt-4o-2024-08-06", m.get("gpt-4o"));
         // Local model -> free
         m.put("local-model", new Rate(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO));
         return java.util.Collections.unmodifiableMap(m);
     }
 
     public static Cost estimate(String modelName, Integer promptTokens, Integer cachedTokens, Integer completionTokens, Integer totalTokens) {
-        String key = modelName == null ? "local-model" : modelName;
-        Rate rate = RATES.getOrDefault(key, RATES.get("local-model"));
+        Rate rate = RATES.getOrDefault(stripDateSuffix(modelName), RATES.get("local-model"));
 
         BigDecimal million = new BigDecimal("1000000");
         BigDecimal input = BigDecimal.ZERO;
@@ -98,6 +95,17 @@ public final class OpenAiPricing {
                 total,
                 "USD");
     }
+
+    /**
+     * 모델명에서 YYYY-MM-DD 형식의 날짜 접미사를 제거합니다.
+     * 예: gpt-5-2025-08-07 -> gpt-5
+     */
+    private static String stripDateSuffix(String modelName) {
+        if (modelName == null) return null;
+        // 패턴: -YYYY-MM-DD (연도4자리-월2자리-일2자리) 끝부분
+        return modelName.replaceFirst("-\\d{4}-\\d{2}-\\d{2}$", "");
+    }
+
 
     private record Rate(BigDecimal inputRatePer1m, BigDecimal outputRatePer1m, BigDecimal cachedInputRatePer1m) {}
 
