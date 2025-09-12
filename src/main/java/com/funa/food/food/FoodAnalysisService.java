@@ -106,21 +106,19 @@ public class FoodAnalysisService {
 
     private static final Logger log = LoggerFactory.getLogger(FoodAnalysisService.class);
 
-    private final ChatClient chatClient;
+    private final ChatClient openChatClient;
+    private final ChatClient localChatClient;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AnalysisFoodRepository analysisFoodRepository;
     private final UsageTokenRepository usageTokenRepository;
-
-    // Inject the configured model from Spring properties if present
-    @Value("${spring.ai.openai.chat.options.model:}")
-    private String modelProperty;
 
     @Value("${app.upload.dir:data/uploads}")
     private String uploadDir;
 
     @Transactional
-    public FoodAnalysisResponse analyze(MultipartFile image, String status, AnalysisMode mode) {
-        validateInputs(image, status, mode);
+    public FoodAnalysisResponse analyze(MultipartFile image, String status, AnalysisMode mode, String effectiveModel) {
+        validateInputs(image, status, mode, effectiveModel);
 
         String persona;
         String userText;
@@ -157,16 +155,19 @@ public class FoodAnalysisService {
             String schemaPath = (mode == AnalysisMode.IMAGE_ONLY)
                     ? "schema/food-analysis-image-only-schema.json"
                     : "schema/food-analysis-schema.json";
-            OpenAiChatOptions options = buildChatOptionsWithSchemaPath(schemaPath);
 
-            ModelCallResult callResult = callModel(image, persona, userText, options);
+            OpenAiChatOptions options = buildChatOptionsWithSchemaPath(schemaPath, effectiveModel);
+
+            // Select backend by modelName: 'local-model' -> local chatClient; otherwise -> OpenAI client
+            ChatClient selectedClient = "local-model".equalsIgnoreCase(effectiveModel) ? this.localChatClient : this.openChatClient;
+            ModelCallResult callResult = callModel(selectedClient, image, persona, userText, options);
             long durationMs = callResult.durationMs();
             FoodAnalysisResponse parsed = parseResponse(callResult.content());
 
             parsed.setUserStatus(status);
 
             ChatResponseMetadata metadata = callResult.metadata;
-            String modelName = metadata.getModel();
+            String resolvedModelFromApi = metadata.getModel();
             Usage usage = metadata.getUsage();
             Integer cachedTokens = null;
             try {
@@ -180,14 +181,14 @@ public class FoodAnalysisService {
             } catch (Exception ignore) {
                 // leave cachedTokens as null if not available
             }
-            UsageToken usageToken = persistUsage(durationMs, modelName, usage.getPromptTokens(), usage.getCompletionTokens(), usage.getTotalTokens(), cachedTokens);
+            UsageToken usageToken = persistUsage(durationMs, resolvedModelFromApi, usage.getPromptTokens(), usage.getCompletionTokens(), usage.getTotalTokens(), cachedTokens);
 
             AnalysisFood saved = persistAnalysisFood(parsed, status, imageMeta, usageToken, mode);
 
             // include analysisMode in response as code value
             parsed.setAnalysisMode(new AnalysisModeConverter().convertToDatabaseColumn(mode));
 
-            enrichResponseWithUsageAndBilling(parsed, usageToken, modelName);
+            enrichResponseWithUsageAndBilling(parsed, usageToken, resolvedModelFromApi);
 
             // populate identifiers and timestamps from saved entity
             parsed.setId(saved.getId());
@@ -201,7 +202,11 @@ public class FoodAnalysisService {
         }
     }
 
-    private void validateInputs(MultipartFile image, String status, AnalysisMode mode) {
+    private void validateInputs(MultipartFile image, String status, AnalysisMode mode, String modelName) {
+        if (modelName == null || modelName.isBlank()) {
+            throw new IllegalArgumentException("modelName is required");
+        }
+
         if (image == null || image.isEmpty()) {
             throw new IllegalArgumentException("image must not be empty");
         }
@@ -233,7 +238,7 @@ public class FoodAnalysisService {
         return new ImageMeta(originalName, uuidName, imagePath, image.getSize(), imageSize, image.getContentType());
     }
 
-    private OpenAiChatOptions buildChatOptionsWithSchemaPath(String classpath) throws IOException {
+    private OpenAiChatOptions buildChatOptionsWithSchemaPath(String classpath, String model) throws IOException {
         String schemaJson = loadClasspath(classpath);
         ResponseFormat.JsonSchema jsonSchema = ResponseFormat.JsonSchema.builder()
                 .name("FoodAnalysisResponse")
@@ -243,16 +248,16 @@ public class FoodAnalysisService {
                 .type(ResponseFormat.Type.JSON_SCHEMA)
                 .jsonSchema(jsonSchema)
                 .build();
-        return OpenAiChatOptions.builder()
-                .responseFormat(responseFormat)
-                .build();
+        OpenAiChatOptions.Builder builder = OpenAiChatOptions.builder().responseFormat(responseFormat);
+        builder.model(model.trim());
+        return builder.build();
     }
 
     private record ModelCallResult(String content, long durationMs, ChatResponseMetadata metadata) {}
 
-    private ModelCallResult callModel(MultipartFile image, String persona, String userText, OpenAiChatOptions options) {
+    private ModelCallResult callModel(ChatClient client, MultipartFile image, String persona, String userText, OpenAiChatOptions options) {
         Instant start = Instant.now();
-        ChatClient.CallResponseSpec response = chatClient
+        ChatClient.CallResponseSpec response = client
                 .prompt()
                 .system(persona)
                 .user(u -> {
@@ -275,26 +280,6 @@ public class FoodAnalysisService {
 
     private FoodAnalysisResponse parseResponse(String content) throws IOException {
         return objectMapper.readValue(content, FoodAnalysisResponse.class);
-    }
-
-    private String resolveModelName() {
-        try {
-            String configured = modelProperty;
-            if (configured != null && !configured.isBlank()) {
-                log.info("Resolved model name (spring property): {}", configured);
-                return normalizeModel(configured);
-            }
-        } catch (Exception ignore) {
-            // Fall back below
-        }
-        String fromEnv = System.getProperty("OPENAI_MODEL", System.getenv().getOrDefault("OPENAI_MODEL", "gpt-5"));
-        String resolved = normalizeModel(fromEnv);
-        log.info("Resolved model name (env/system): {}", resolved);
-        return resolved;
-    }
-
-    private String normalizeModel(String name) {
-        return name.trim();
     }
 
     private UsageToken persistUsage(long durationMs, String modelName, Integer promptTokens, Integer completionTokens, Integer totalTokens, Integer cachedTokens) {

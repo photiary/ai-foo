@@ -43,10 +43,11 @@ public class FoodAnalysisController {
     public ResponseEntity<FoodAnalysisResponse> analyze(
             @RequestParam("image") MultipartFile image,
             @RequestParam(value = "status", required = false) String status,
-            @RequestParam(value = "analysisMode", required = false) String analysisMode
+            @RequestParam(value = "analysisMode", required = false) String analysisMode,
+            @RequestParam(value = "modelName") String modelName
     ) {
         AnalysisMode mode = AnalysisMode.from(analysisMode);
-        FoodAnalysisResponse resp = foodAnalysisService.analyze(image, status, mode);
+        FoodAnalysisResponse resp = foodAnalysisService.analyze(image, status, mode, modelName);
         return ResponseEntity.ok(resp);
     }
     @Operation(

@@ -12,14 +12,14 @@ public class ChatService {
 
     private static final Logger log = LoggerFactory.getLogger(ChatService.class);
 
-    private final ChatClient chatClient;
+    private final ChatClient localChatClient;
 
     public String complete(String userInput) {
         if (userInput == null || userInput.isBlank()) {
             throw new IllegalArgumentException("request must not be blank");
         }
         log.info("Handling chat request: {}", userInput);
-        String content = chatClient
+        String content = localChatClient
                 .prompt()
                 .user(userInput)
                 .call()

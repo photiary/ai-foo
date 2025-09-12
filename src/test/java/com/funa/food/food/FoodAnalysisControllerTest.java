@@ -45,13 +45,14 @@ class FoodAnalysisControllerTest {
                 .suggestion("현미밥과 채소를 추가하세요")
                 .build();
 
-        Mockito.when(foodAnalysisService.analyze(Mockito.any(), Mockito.anyString(), Mockito.eq(AnalysisMode.IMAGE_WITH_SUGGESTION)))
+        Mockito.when(foodAnalysisService.analyze(Mockito.any(), Mockito.anyString(), Mockito.eq(AnalysisMode.IMAGE_WITH_SUGGESTION), Mockito.any()))
                 .thenReturn(resp);
 
         mockMvc.perform(multipart("/v1/food/analysis")
                         .file(image)
                         .param("status", status)
                         .param("analysisMode", "식사 이미지 분석과 사용자 상태에 따라 제안")
+                        .param("modelName", "local-model")
                         .contentType(MediaType.MULTIPART_FORM_DATA)
                         .characterEncoding(StandardCharsets.UTF_8))
                 .andExpect(status().isOk())

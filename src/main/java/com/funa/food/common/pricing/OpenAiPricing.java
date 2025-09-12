@@ -101,6 +101,7 @@ public final class OpenAiPricing {
      * 예: gpt-5-2025-08-07 -> gpt-5
      */
     private static String stripDateSuffix(String modelName) {
+        if ("gpt-4o-2024-05-13".equals(modelName)) return modelName;
         if (modelName == null) return null;
         // 패턴: -YYYY-MM-DD (연도4자리-월2자리-일2자리) 끝부분
         return modelName.replaceFirst("-\\d{4}-\\d{2}-\\d{2}$", "");

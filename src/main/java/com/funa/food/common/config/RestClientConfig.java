@@ -8,6 +8,8 @@ import org.springframework.boot.web.client.RestClientCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.web.client.DefaultResponseErrorHandler;
+import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
 import java.net.http.HttpClient;
@@ -50,5 +52,11 @@ public class RestClientConfig {
             log.info("Configured RestClient timeouts: connect={}ms, read={}ms, loggingEnabled={}, maxBodyBytes={}",
                     connectTimeout.toMillis(), readTimeout.toMillis(), logEnabled, logMaxBodyBytes);
         };
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ResponseErrorHandler.class)
+    public ResponseErrorHandler responseErrorHandler() {
+        return new DefaultResponseErrorHandler();
     }
 }
