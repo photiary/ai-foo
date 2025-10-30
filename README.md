@@ -31,11 +31,15 @@ root
 
 - 시작
 
-`docker compose -f compose.yaml -p ai-foo up -d postgres`
+```
+docker compose -f compose.yaml -p ai-foo up -d postgres
+```
 
 - 재시작
 
-`docker compose -f compose.yaml -p ai-foo restart postgres`
+```
+docker compose -f compose.yaml -p ai-foo restart postgres
+```
 
 ## 🌭 Swagger
 
