@@ -23,7 +23,6 @@ root
 ├─ src.main.java.com.funa
 │  ├─ food                   # 식사 이미지 분석
 │  └─ usage                  # 토큰 사용량
-│  └─ 
 └─ src.main.resources
    └─ db.migration           # DB 마이그레이션
 ```
